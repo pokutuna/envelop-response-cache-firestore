@@ -1,0 +1,11 @@
+{
+  "name": "@pokutuna/envelop-response-cache-firestore",
+  "version": "0.0.1",
+  "main": "index.js",
+  "repository": "ssh://git@github.com/pokutuna/envelop-response-cache-firestore.git",
+  "author": "pokutuna <mail@pokutuna.com>",
+  "license": "MIT",
+  "devDependencies": {
+    "gts": "^3.1.0"
+  }
+}
