@@ -1,0 +1,33 @@
+version: '3.8'
+services:
+  test:
+    build:
+      dockerfile: ./Dockerfile.test
+      context: .
+    environment:
+      - FIRESTORE_EMULATOR_HOST=firestore:8500
+    depends_on:
+      - firestore
+    entrypoint: [
+      '/tools/wait-for-it', 'firestore:8500', '--'
+    ]
+    command: [
+      'yarn', 'test'
+    ]
+    volumes:
+      - ./package.json:/app/package.json
+      - ./tsconfig.json:/app/tsconfig.json
+      - ./jest.config.js:/app/jest.config.js
+      - ./.eslintrc.json:/app/.eslintrc.json
+      - ./.eslintignore:/app/.eslintignore
+      - ./.prettierrc.js:/app/.prettierrc.js
+      - ./src/:/app/src/
+      - ./test/:/app/test/
+
+  firestore:
+    image: google/cloud-sdk:emulators
+    expose:
+      - 8500
+    command: [
+      'gcloud', 'beta', 'emulators', 'firestore', 'start', '--host-port=0.0.0.0:8500'
+    ]

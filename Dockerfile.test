@@ -1,0 +1,8 @@
+FROM node:16-slim
+
+ADD https://raw.githubusercontent.com/vishnubob/wait-for-it/master/wait-for-it.sh /tools/wait-for-it
+RUN chmod +x /tools/wait-for-it
+
+WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install
