@@ -5,9 +5,8 @@ import type {
   FirestoreDataConverter,
   Query,
   QueryDocumentSnapshot,
-  Timestamp,
 } from '@google-cloud/firestore';
-import {FieldPath} from '@google-cloud/firestore';
+import {FieldPath, Timestamp} from '@google-cloud/firestore';
 import chunk from 'lodash.chunk';
 
 export type BuildEntityId = (typename: string, id: number | string) => string;
@@ -23,7 +22,7 @@ export type FirestoreCacheParameters = {
   /**
    * Firestore collection path
    */
-  collectionPath: string;
+  collectionPath?: string;
 
   /**
    *
@@ -37,7 +36,7 @@ export type CacheFirestore = Cache & {
 
 type CacheEntry = {
   payload: string; // JSON
-  expiredAt: Date;
+  expiredAt: Date | null;
   typenames: string[]; // Set of typename
   entityIds: string[]; // Set of entityId
 };
@@ -52,18 +51,19 @@ const converter: FirestoreDataConverter<CacheEntry> = {
     const data = snapshot.data();
     return {
       ...data,
-      expiredAt: data.expiredAt.toDate(),
+      expiredAt: data.expiredAt ? data.expiredAt.toDate() : null,
     };
   },
 };
+
+export const defaultCollectionPath = 'responseCache';
 
 export function createFirestoreCache(
   params: FirestoreCacheParameters
 ): CacheFirestore {
   const db = params.firestore;
-  const collection = db
-    .collection(params.collectionPath)
-    .withConverter(converter);
+  const collectionPath = params.collectionPath ?? defaultCollectionPath;
+  const collection = db.collection(collectionPath).withConverter(converter);
 
   const buildEntityId = params?.buildEntityId ?? defaultBuildEntityId;
 
@@ -80,7 +80,7 @@ export function createFirestoreCache(
 
       const entry: CacheEntry = {
         payload: JSON.stringify(data),
-        expiredAt: new Date(Date.now() + ttl),
+        expiredAt: isFinite(ttl) ? new Date(Date.now() + ttl) : null,
         typenames: Array.from(typenames),
         entityIds: Array.from(entityIds),
       };
@@ -98,7 +98,7 @@ export function createFirestoreCache(
       if (!entry) return undefined;
 
       const {payload, expiredAt} = entry;
-      if (expiredAt.getTime() <= Date.now()) {
+      if (expiredAt && expiredAt.getTime() <= Date.now()) {
         doc.delete();
         return undefined;
       }
