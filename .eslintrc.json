@@ -9,5 +9,8 @@
   },
   "rules": {
     "import/order": "warn"
+  },
+  "parserOptions": {
+    "ecmaVersion": 2021
   }
 }

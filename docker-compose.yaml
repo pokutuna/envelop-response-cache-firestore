@@ -18,6 +18,7 @@ services:
       - ./package.json:/app/package.json
       - ./tsconfig.json:/app/tsconfig.json
       - ./jest.config.js:/app/jest.config.js
+      - ./jest.init.js:/app/jest.init.js
       - ./.eslintrc.json:/app/.eslintrc.json
       - ./.eslintignore:/app/.eslintignore
       - ./.prettierrc.js:/app/.prettierrc.js
@@ -26,6 +27,8 @@ services:
 
   firestore:
     image: google/cloud-sdk:emulators
+    ports:
+      - 8500:8500
     expose:
       - 8500
     command: [
