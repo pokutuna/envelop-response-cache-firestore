@@ -69,6 +69,8 @@ export function createFirestoreCache(
 
   return {
     async set(id, data, entities, ttl) {
+      const ref = collection.doc(id);
+
       const typenames = new Set<string>();
       const entityIds = new Set<string>();
       for (const {typename, id} of entities) {
@@ -85,13 +87,12 @@ export function createFirestoreCache(
         entityIds: Array.from(entityIds),
       };
 
-      const doc = collection.doc(id);
-      await doc.set(entry);
+      await ref.set(entry);
     },
 
     async get(id) {
-      const doc = collection.doc(id);
-      const snapshot = await doc.get();
+      const ref = collection.doc(id);
+      const snapshot = await ref.get();
       if (!snapshot.exists) return undefined;
 
       const entry = snapshot.data();
@@ -99,7 +100,7 @@ export function createFirestoreCache(
 
       const {payload, expiredAt} = entry;
       if (expiredAt && expiredAt.getTime() <= Date.now()) {
-        doc.delete();
+        ref.delete();
         return undefined;
       }
       return JSON.parse(payload);
@@ -120,52 +121,52 @@ export function createFirestoreCache(
       // delete by typename
       await chunk(Array.from(typenames), 10).reduce((prev, chunk) => {
         return prev.then(async () => {
-          const query = collection.where(
-            'typenames',
-            'array-contains-any',
-            chunk
-          );
-          return deleteAll(db, query);
+          const query = collection
+            .where('typenames', 'array-contains-any', chunk)
+            .orderBy(FieldPath.documentId(), 'asc');
+          return deleteAll(db, query, s => s.id);
         });
       }, Promise.resolve());
 
       // delete by entity
       await chunk(Array.from(entityIds), 10).reduce((prev, chunk) => {
         return prev.then(async () => {
-          const query = collection.where(
-            'entityIds',
-            'array-contains-any',
-            chunk
-          );
-          return deleteAll(db, query);
+          const query = collection
+            .where('entityIds', 'array-contains-any', chunk)
+            .orderBy(FieldPath.documentId(), 'asc');
+          return deleteAll(db, query, s => s.id);
         });
       }, Promise.resolve());
     },
 
     async deleteExpiredCacheEntry() {
-      const query = collection.where('expiredAt', '<', Date.now());
-      return deleteAll(db, query);
+      const query = collection
+        .where('expiredAt', '<', new Date())
+        .orderBy('expiredAt', 'asc');
+      return deleteAll(db, query, s => s.data()?.expiredAt);
     },
   };
 }
 
-async function deleteAll(db: Firestore, query: Query) {
+async function deleteAll(
+  db: Firestore,
+  query: Query,
+  afterFunc: (snapshot: QueryDocumentSnapshot) => DocumentData[string]
+) {
   return new Promise<void>((resolve, reject) =>
-    deleteQueryBatch(db, query, resolve).catch(reject)
+    deleteQueryBatch(db, query, afterFunc, resolve).catch(reject)
   );
 }
 
 async function deleteQueryBatch(
   db: Firestore,
   query: Query,
+  afterFunc: (snapshot: QueryDocumentSnapshot) => DocumentData[string],
   resolve: () => void,
-  afterId?: string
+  after?: DocumentData[string]
 ) {
-  const snapshot = await query
-    .orderBy(FieldPath.documentId(), 'asc')
-    .startAfter(afterId)
-    .limit(500)
-    .get();
+  const q = query.limit(500);
+  const snapshot = await (after ? q.startAfter(after) : q).get();
   const batchSize = snapshot.size;
   if (batchSize === 0) {
     resolve();
@@ -176,9 +177,9 @@ async function deleteQueryBatch(
   snapshot.docs.forEach(doc => batch.delete(doc.ref));
   await batch.commit();
 
-  const lastId = snapshot.docs[snapshot.docs.length - 1].id;
+  const last = snapshot.docs[snapshot.docs.length - 1];
   process.nextTick(() => {
-    deleteQueryBatch(db, query, resolve, lastId);
+    deleteQueryBatch(db, query, afterFunc, resolve, afterFunc(last));
   });
 }
 
