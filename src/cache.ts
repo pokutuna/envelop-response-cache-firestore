@@ -15,17 +15,21 @@ export type BuildOperationResultCacheKey = (responseId: string) => string;
 
 export type FirestoreCacheParameters = {
   /**
-   *
+   * Firestore instance to store cache entry
+   * @see @google-cloud/firestore https://www.npmjs.com/package/@google-cloud/firestore
    */
   firestore: Firestore;
 
   /**
    * Firestore collection path
+   * @defaultValue "responseCache"
    */
   collectionPath?: string;
 
   /**
-   *
+   * Customize entity id string conversion (usually not required to use)
+   * If typename#is is substring of other typename, you have to set this.
+   * @defaultValue ({typename, id}) => `${typename}#${id}`
    */
   buildEntityId?: BuildEntityId;
 };
