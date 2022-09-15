@@ -1000,10 +1000,6 @@ describe('useResponseCache with Firestore', () => {
     await testInstance.execute(query);
     expect(spy).toHaveBeenCalledTimes(1);
 
-    console.log(
-      (await firestore.collection(collectionPath).get()).docs.map(d => d.data())
-    );
-
     expect(
       await exists(firestore.collection(collectionPath), {typename: 'User'})
     ).toBeTruthy();
