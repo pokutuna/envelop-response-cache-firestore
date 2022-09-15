@@ -145,7 +145,7 @@ describe('useResponseCache with Firestore', () => {
   });
 
   test('should reuse cache', async () => {
-    const spy = jest.fn((_, {id}) => users[id + 1]);
+    const spy = jest.fn((_, {id}) => users[id - 1]);
 
     const schema = makeExecutableSchema({
       typeDefs,
@@ -198,7 +198,7 @@ describe('useResponseCache with Firestore', () => {
 
   test('should purge cache on mutation', async () => {
     const usersSpy = jest.fn(() => users);
-    const userSpy = jest.fn((_, {id}) => users[id + 1]);
+    const userSpy = jest.fn((_, {id}) => users[id - 1]);
     const schema = makeExecutableSchema({
       typeDefs,
       resolvers: {
@@ -959,7 +959,111 @@ describe('useResponseCache with Firestore', () => {
     expect(await find(col, {typename: 'User'}, 1500)).toHaveLength(1001);
 
     await cache.invalidate([{typename: 'User'}]);
-    await tick();
+
     expect(await find(col, {typename: 'User'}, 1500)).toHaveLength(0);
   }, 20000);
+
+  test('store cache to other collection', async () => {
+    const collectionPath = '_responseCache_';
+    const cache = createFirestoreCache({firestore, collectionPath});
+
+    const spy = jest.fn((_, {id}) => {
+      return users[id - 1];
+    });
+
+    const schema = makeExecutableSchema({
+      typeDefs,
+      resolvers: {
+        Query: {
+          user: spy,
+        },
+      },
+    });
+
+    const testInstance = createTestkit(
+      [useResponseCache({session: () => null, cache})],
+      schema
+    );
+
+    const query = /* GraphQL */ `
+      query test {
+        user(id: 1) {
+          ...UserFragment
+        }
+      }
+      ${userFragment}
+    `;
+
+    await testInstance.execute(query);
+    await tick();
+
+    await testInstance.execute(query);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    console.log(
+      (await firestore.collection(collectionPath).get()).docs.map(d => d.data())
+    );
+
+    expect(
+      await exists(firestore.collection(collectionPath), {typename: 'User'})
+    ).toBeTruthy();
+    expect(
+      await exists(firestore.collection('cache'), {typename: 'User'})
+    ).toBeFalsy();
+
+    await cache.invalidate([{typename: 'User'}]);
+
+    expect(
+      await exists(firestore.collection(collectionPath), {typename: 'User'})
+    ).toBeFalsy();
+  });
+
+  test('store cache to subcollection', async () => {
+    const collectionPath = 'internal/cache/responseCache';
+    const cache = createFirestoreCache({firestore, collectionPath});
+
+    const spy = jest.fn((_, {id}) => users[id - 1]);
+
+    const schema = makeExecutableSchema({
+      typeDefs,
+      resolvers: {
+        Query: {
+          user: spy,
+        },
+      },
+    });
+
+    const testInstance = createTestkit(
+      [useResponseCache({session: () => null, cache})],
+      schema
+    );
+
+    const query = /* GraphQL */ `
+      query test {
+        user(id: 1) {
+          ...UserFragment
+        }
+      }
+      ${userFragment}
+    `;
+
+    await testInstance.execute(query);
+    await tick();
+
+    await testInstance.execute(query);
+    expect(spy).toHaveBeenCalledTimes(1);
+
+    expect(
+      await exists(firestore.collection(collectionPath), {typename: 'User'})
+    ).toBeTruthy();
+    expect(
+      await exists(firestore.collection('cache'), {typename: 'User'})
+    ).toBeFalsy();
+
+    await cache.invalidate([{typename: 'User'}]);
+
+    expect(
+      await exists(firestore.collection(collectionPath), {typename: 'User'})
+    ).toBeFalsy();
+  });
 });
