@@ -40,12 +40,12 @@ export type CacheFirestore = Cache & {
 
 type CacheEntry = {
   payload: string; // JSON
-  expiredAt: Date | null;
+  expireAt: Date | null;
   typenames: string[]; // Set of typename
   entityIds: string[]; // Set of entityId
 };
 
-type CacheEntryFS = Omit<CacheEntry, 'expiredAt'> & {expiredAt: Timestamp};
+type CacheEntryFS = Omit<CacheEntry, 'expireAt'> & {expireAt: Timestamp};
 
 const converter: FirestoreDataConverter<CacheEntry> = {
   toFirestore(entry: CacheEntry): DocumentData {
@@ -55,7 +55,7 @@ const converter: FirestoreDataConverter<CacheEntry> = {
     const data = snapshot.data();
     return {
       ...data,
-      expiredAt: data.expiredAt ? data.expiredAt.toDate() : null,
+      expireAt: data.expireAt ? data.expireAt.toDate() : null,
     };
   },
 };
@@ -86,7 +86,7 @@ export function createFirestoreCache(
 
       const entry: CacheEntry = {
         payload: JSON.stringify(data),
-        expiredAt: isFinite(ttl) ? new Date(Date.now() + ttl) : null,
+        expireAt: isFinite(ttl) ? new Date(Date.now() + ttl) : null,
         typenames: Array.from(typenames),
         entityIds: Array.from(entityIds),
       };
@@ -102,8 +102,8 @@ export function createFirestoreCache(
       const entry = snapshot.data();
       if (!entry) return undefined;
 
-      const {payload, expiredAt} = entry;
-      if (expiredAt && expiredAt.getTime() <= Date.now()) {
+      const {payload, expireAt} = entry;
+      if (expireAt && expireAt.getTime() <= Date.now()) {
         ref.delete();
         return undefined;
       }
@@ -145,9 +145,9 @@ export function createFirestoreCache(
 
     async deleteExpiredCacheEntry() {
       const query = collection
-        .where('expiredAt', '<', new Date())
-        .orderBy('expiredAt', 'asc');
-      return deleteAll(db, query, s => s.data()?.expiredAt);
+        .where('expireAt', '<', new Date())
+        .orderBy('expireAt', 'asc');
+      return deleteAll(db, query, s => s.data()?.expireAt);
     },
   };
 }
