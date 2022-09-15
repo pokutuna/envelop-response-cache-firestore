@@ -1,16 +1,26 @@
 {
   "name": "@pokutuna/envelop-response-cache-firestore",
   "version": "0.1.0",
-  "repository": "ssh://git@github.com/pokutuna/envelop-response-cache-firestore.git",
+  "description": "Firestore cache implementation for @envelop/response-cache plugin",
+  "homepage": "https://github.com/pokutuna/envelop-response-cache-firestore#readme",
+  "bugs": {
+    "url": "https://github.com/pokutuna/envelop-response-cache-firestore/issues"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pokutuna/envelop-response-cache-firestore.git"
+  },
   "license": "MIT",
   "author": "pokutuna <mail@pokutuna.com>",
   "main": "build/src/index.js",
+  "files": [
+    "build"
+  ],
   "scripts": {
     "clean": "gts clean",
     "compile": "tsc",
     "fix": "gts fix",
     "lint": "gts lint",
-    "pretest": "npm run compile",
     "test": "jest",
     "posttest": "npm run lint"
   },
@@ -36,7 +46,7 @@
     "@envelop/core": "^2.6.0",
     "graphql": "^14.0.0 || ^15.0.0 || ^16.0.0"
   },
-  "files": [
-    "build"
-  ]
+  "publishConfig": {
+    "access": "public"
+  }
 }
