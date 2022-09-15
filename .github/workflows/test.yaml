@@ -13,7 +13,7 @@ jobs:
       - uses: actions/setup-node@v3
         with:
           node-version: '16.x'
-          cache: 'yarn'
+          cache: 'npm'
       - run: docker compose up -d firestore
-      - run: yarn --frozen-lockfile
-      - run: yarn test
+      - run: npm install
+      - run: npm run test
