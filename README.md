@@ -1,6 +1,8 @@
 @pokutuna/envelop-response-cache-firestore
 ===
 
+[![npm version](https://badge.fury.io/js/@pokutuna%2Fenvelop-response-cache-firestore.svg)](https://badge.fury.io/js/@pokutuna%2Fenvelop-response-cache-firestore) [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 Firestore cache implementation for [@envelop/response-cache](https://www.npmjs.com/package/@envelop/response-cache) plugin.
 
 Provides response caching that works well with serverless environments.
