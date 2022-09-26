@@ -1,6 +1,6 @@
 {
   "name": "@pokutuna/envelop-response-cache-firestore",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Firestore cache implementation for @envelop/response-cache plugin",
   "homepage": "https://github.com/pokutuna/envelop-response-cache-firestore#readme",
   "bugs": {
